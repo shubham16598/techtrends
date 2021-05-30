@@ -1,15 +1,19 @@
 import sqlite3
 import logging
+import sys
 from datetime import datetime
 from flask import Flask, jsonify, json, render_template, request, url_for, redirect, flash
 from werkzeug.exceptions import abort
 
+db_connection_count = 0
 
 # Function to get a database connection.
 # This function connects to database with the name `database.db`
 def get_db_connection():
+    global db_connection_count
     connection = sqlite3.connect('database.db')
     connection.row_factory = sqlite3.Row
+    db_connection_count += 1
     return connection
 
 # Function to get a post using its ID
@@ -40,7 +44,7 @@ def post(post_id):
     if post is None:
       datestamp = datetime.now()
       timestamp = datestamp.strftime("%d-%b-%Y (%H:%M:%S.%f)")
-      app.logger.info("TimeStampe " + timestamp + " Failed to access article: " + str(post_id))
+      app.logger.error("TimeStampe " + timestamp + " Failed to access article: " + str(post_id))
       return render_template('404.html'), 404
     else:
       datestamp = datetime.now()
@@ -84,7 +88,7 @@ def metrics():
     connection.close()
     response = app.response_class(
         response=json.dumps(
-            {"status":"success","code":0,"data":{"db_connection_count": 2, "post_count": Posts}}
+            {"status":"success","code":0,"data":{"db_connection_count": db_connection_count, "post_count": Posts}}
             ),
         status=200,
         mimetype='application/json'
@@ -103,6 +107,12 @@ def healthz():
 # start the application on port 3111
 if __name__ == "__main__":
 
+   # set logger to handle STDOUT and STDERR 
+   stdout_handler = logging.StreamHandler(sys.stdout)
+   stderr_handler =  logging.StreamHandler(sys.stderr) 
+   handlers = [stderr_handler, stdout_handler]
+   # format output
+   format_output = "%(asctime)s:%(levelname)s: %(message)s"
    ## stream logs to app.log file
-   logging.basicConfig(filename='app.log',level=logging.DEBUG)
+   logging.basicConfig(filename='app.log', level=logging.DEBUG, format=format_output, handlers=handlers)
    app.run(host='0.0.0.0', port='3111')

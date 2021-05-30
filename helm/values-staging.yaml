@@ -6,7 +6,7 @@ service:
   protocol: TCP
   type: ClusterIP
 image:
-  repository: shubham16598/techtrends
+  repository: techtrends
   tag: v1.0.0
   pullPolicy: IfNotPresent
 replicaCount: 3
